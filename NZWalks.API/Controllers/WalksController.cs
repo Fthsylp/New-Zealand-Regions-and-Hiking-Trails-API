@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTO;
 using NZWalks.API.Repositories;
@@ -24,6 +25,7 @@ namespace NZWalks.API.Controllers
         // CREATE Walk
         // POST: /api/walks
         [HttpPost]
+        [ValidateModel]
         public async Task<IActionResult> Create([FromBody] AddWalkRequestDto addWalkRequestDto)
         {
             // Map DTO to Domain Model
@@ -35,12 +37,18 @@ namespace NZWalks.API.Controllers
             var walkDto = mapper.Map<WalkDto>(walkDomainModel);
 
             return Ok(walkDto);
+
         }
 
+        // GET Walks
+        // GET: /api/walks?filterOn=Name&filterQuery=Track&sortBy=Name&isAscending=true&pageNumber=1&pageSize=10
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? filterOn, [FromQuery] string? filterQuery,
+            [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
+            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 1000)
         {
-            var walksDomainModel = await walkRepository.GetAllAsync();
+            var walksDomainModel = await walkRepository.GetAllAsync(filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
 
             // Map Domain Model to DTO
             return Ok(mapper.Map<List<WalkDto>>(walksDomainModel));
@@ -69,6 +77,7 @@ namespace NZWalks.API.Controllers
         // Put: /api/Walks/{id}
         [HttpPut]
         [Route("{id:Guid}")]
+        [ValidateModel] //instead of using modelstate.isvalid we use this
         public async Task<IActionResult> Update([FromRoute] Guid id, UpdateWalkRequestDto updateWalkRequestDto)
         {
             // Map DTO to Domain Model
@@ -93,7 +102,7 @@ namespace NZWalks.API.Controllers
         {
             var deletedWalkDomainModel = await walkRepository.DeleteAsync(id);
 
-            if(deletedWalkDomainModel == null) 
+            if (deletedWalkDomainModel == null)
             {
                 return NotFound();
             }
@@ -103,5 +112,7 @@ namespace NZWalks.API.Controllers
 
             return Ok(walkDto);
         }
+
+
     }
 }
